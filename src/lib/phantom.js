@@ -31,16 +31,20 @@ function Phantom (options) {
 Phantom.prototype.start = function (callback) {
   var self = this;
   var port = self.options.port;
+  var args = self.options.phantom_args || [];
 
   if (this.child) {
     callback();
     return;
   }
 
+  args.push('--webdriver');
+  args.push(port);
+
   this.child = processHelper.start({
     bin: phantomjs.path,
     prefix: 'phantom',
-    args: ['--webdriver', port],
+    args: args,
     waitForMessage: /GhostDriver - Main - running on port/,
     errorMessage: /Error/
   }, callback);

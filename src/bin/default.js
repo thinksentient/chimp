@@ -97,6 +97,7 @@ module.exports = {
   // - - - - PHANTOM  - - - -
   phantom_w: 1280,
   phantom_h: 1024,
+  phantom_args: [],
 
   // - - - - DEBUGGING  - - - -
   log: 'info',
