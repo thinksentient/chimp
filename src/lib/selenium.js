@@ -1,9 +1,9 @@
-var _              = require('underscore'),
-    processHelper  = require('./process-helper.js'),
-    selenium       = require('selenium-standalone'),
-    SessionManager = require('./session-manager.js'),
-    booleanHelper   = require('./boolean-helper'),
-    log            = require('./log');
+var _ = require('underscore'),
+  processHelper = require('./process-helper.js'),
+  selenium = require('selenium-standalone'),
+  SessionManager = require('./session-manager.js'),
+  booleanHelper = require('./boolean-helper'),
+  log = require('./log');
 
 /**
  * Selenium Constructor
@@ -11,7 +11,7 @@ var _              = require('underscore'),
  * @param {Object} options
  * @api public
  */
-function Selenium (options) {
+function Selenium(options) {
 
   if (!options) {
     throw new Error('options is required');
@@ -23,28 +23,7 @@ function Selenium (options) {
 
   this.options = _.clone(options);
 
-  this.seleniumStandaloneOptions = {
-    // check for more recent versions of selenium here:
-    // http://selenium-release.storage.googleapis.com/index.html
-    version: '2.50.1',
-    baseURL: 'https://selenium-release.storage.googleapis.com',
-    drivers: {
-      chrome: {
-        // check for more recent versions of chrome driver here:
-        // http://chromedriver.storage.googleapis.com/index.html
-        version: '2.20',
-        arch: process.arch,
-        baseURL: 'https://chromedriver.storage.googleapis.com'
-      },
-      ie: {
-        // check for more recent versions of internet explorer driver here:
-        // http://selenium-release.storage.googleapis.com/index.html
-        version: '2.50.0',
-        arch: 'ia32',
-        baseURL: 'https://selenium-release.storage.googleapis.com'
-      }
-    }
-  };
+  this.seleniumStandaloneOptions = options.seleniumStandaloneOptions;
 
   if (!this.options['clean-selenium-server']) {
     // poor-man's singleton is enough for our needs
@@ -85,7 +64,7 @@ Selenium.prototype.install = function (callback) {
   this.seleniumStandaloneOptions.progressCb = progressCb;
   selenium.install(this.seleniumStandaloneOptions, callback);
 
-  function progressCb (total, progress, chunk) {
+  function progressCb(total, progress, chunk) {
     if (firstProgress) {
       firstProgress = false;
     }
@@ -129,7 +108,10 @@ Selenium.prototype.start = function (callback) {
       return;
     }
 
-    self.seleniumStandaloneOptions.seleniumArgs = ['-port', port];
+    if (!self.seleniumStandaloneOptions.seleniumArgs) {
+      self.seleniumStandaloneOptions.seleniumArgs = [];
+    }
+    self.seleniumStandaloneOptions.seleniumArgs.push('-port', port);
 
     if (process.env['chimp.log'] === 'verbose' || process.env['chimp.log'] === 'debug') {
       self.options.seleniumDebug = true;
@@ -181,18 +163,17 @@ Selenium.prototype.stop = function (callback) {
 
     log.debug('[chimp][selenium] killing active session');
 
-      var options = {
+    var options = {
         child: self.child,
         prefix: 'selenium',
         signal: 'SIGINT'
       };
 
-      log.debug('[chimp][selenium] stopping process');
-      processHelper.kill(options, function (err, res) {
+    log.debug('[chimp][selenium] stopping process');
+    processHelper.kill(options, function (err, res) {
         self.child = null;
         callback(err, res);
       });
-
   } else {
     log.debug('[chimp][selenium] no process to kill');
     callback(null);
@@ -202,7 +183,7 @@ Selenium.prototype.stop = function (callback) {
 
 Selenium.prototype.interrupt = function (callback) {
   log.debug('[chimp][selenium] interrupt called');
-  if (!!this.options['clean-selenium-server']) {
+  if (!this.options['watch'] || !!this.options['clean-selenium-server']) {
     this.stop(callback);
   } else {
     log.debug('[chimp][selenium] interrupt is not killing selenium because ' +

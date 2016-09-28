@@ -1,3 +1,117 @@
+# 0.41.1
+* Update selenium-standalone to the latest version (Sam Hatoum) 
+* Add Xolvio messages to users (Sam Hatoum)
+
+# 0.41.0
+* Use phantomjs-prebuilt from the Medium team (Sam Hatoum) 
+* Updates Cucumber to 1.3.0-chimp.1 (fixes 432) (Sam Hatoum) 
+* Rewrite of the Domain vs E2E runs (Sam Hatoum) 
+* Fixes DEBUG parsing (Sam Hatoum) 
+
+# 0.40.7
+
+* Fix automocking of wrappy library (Sam Hatoum) 
+* Fix hanging selenium in non-watch mode (Sam Hatoum) 
+* Fix  debug logging when running Chimp programmatically (Sam Hatoum) 
+* Fix hanging selenium in non-watch mode (Sam Hatoum) 
+
+# 0.40.6
+
+* Stop piping stdin as it messes with Gulp and is not needed (Sam Hatoum) 
+* Adds the release notes for v0.40.5 (Sam Hatoum) 
+
+# 0.40.5
+
+* Update fibers - support for Node v6.5.0 (Daniel Bayerlein) 
+* Update fiberize util function (lucetius) 
+* Add backtrace option value to cucumber exec option (lucetius) 
+* Use updated version of cucumber with support for global pending (lucetius) 
+* Update ISSUE_TEMPLATE.md (Sam Hatoum) 
+* Update ISSUE_TEMPLATE.md (Sam Hatoum) 
+* Update ISSUE_TEMPLATE.md (Sam Hatoum) 
+* Fix deprecated usage of cucumber hooks (Jez Stephens) 
+* Update README.md (Sam Hatoum) 
+* Update README.md (Sam Hatoum) 
+* Adds the release notes for v0.40.4 (Sam Hatoum) 
+* change the selenium version parameter to browserVersion (dankelleher) 
+
+# 0.40.4
+
+* No need to checkout (Sam Hatoum) 
+
+# 0.40.1
+
+* Fixes history file not being commited (Sam Hatoum) 
+* Automatically writes the commit history to the HISTORY.md file (Sam Hatoum) 
+
+# 0.40.0
+
+* Update HISTORY.md (Sam Hatoum) 
+* Automatically writes the commit history to the HISTORY.md file (Sam Hatoum) 
+
+# 0.39.4
+
+* Updated to 1.2.2 version of xolvio/cucumber (lgandecki) 
+
+# 0.39.3
+
+* Make Cucumber.js a bundledDependency (Sam Hatoum) 
+
+# 0.39.1
+
+* Fixing issue #430 (Duc Tri Le)
+
+
+# 0.39.0
+
+* Nicer approach to setting the args (Joe Farro) 
+* allow seleniumStandaloneOptions.seleniumArgs to be set - fixes #428 (Joe Farro) 
+* use the newest current version of node for circle testing (lgandecki) 
+* getting rid of the remains of chimp widgets (lgandecki) 
+* updated version of cucumberjs (lgandecki) 
+* Removes chimp-widgets. Fixes #333 (Sam Hatoum)  
+* updating node-fibers version (Greg Parsons) 
+* updating circle node version (Greg Parsons) 
+* updating packages relying on fs (Greg Parsons) 
+
+# 0.38.0
+
+* Updated to PhantomJS 2
+* Updates Mocha to 2.53
+
+# 0.37.1
+
+* Fixes Cucumber.js error conditioning
+
+# 0.37.0
+
+* Adds mochaGrep field
+* Extracts the selenium-standalone options
+* Allows custom Phantom-bin path
+* Lots of bug fixes
+
+# 0.36.0
+
+* Simian fixes
+
+# 0.35.0
+
+* Feature: Support for multibrowser testing
+
+# 0.34.1
+
+* Fix (#351): When the browser.debug() statement is hit I expect
+  to continue the test by pressing [ENTER] in the console window.
+
+# 0.34.0
+
+* Only take screenshots on errors in CI environment
+  (when CI environment variable is set to a truthy value) (fixes #344).
+  This fixes the problem that Chrome focuses when an error happens.
+* Use timeoutsImplicitWait default of 0 again (fixes #348, fixes #330).
+  Because the implicit wait will always wait the full 3000 seconds when the element
+  has not been found initially. It has no concept of a retry interval as assumed.
+
 # 0.33.1
 
 * Fixes jasmine watch mode

@@ -2,6 +2,7 @@ jest.dontMock('../lib/chimp.js');
 jest.dontMock('../lib/boolean-helper');
 jest.dontMock('underscore');
 jest.dontMock('async');
+jest.dontMock('wrappy');
 
 describe('Chimp', function () {
 
@@ -28,7 +29,7 @@ describe('Chimp', function () {
 
       var myOptions = {
         a: 1,
-        b: "aString"
+        b: 'aString'
       };
       var chimp = new Chimp(myOptions);
 
@@ -57,6 +58,7 @@ describe('Chimp', function () {
       var restore = chimp.fs.existsSync;
       chimp.fs.existsSync = jest.genMockFn().mockReturnValue(false);
 
+      chimp.informUser = jest.genMockFunction();
       chimp.exec = jest.genMockFunction();
 
       chimp.selectMode = jest.genMockFunction();
@@ -78,6 +80,7 @@ describe('Chimp', function () {
       var restore = chimp.fs.existsSync;
       chimp.fs.existsSync = jest.genMockFn().mockReturnValue(true);
 
+      chimp.informUser = jest.genMockFunction();
       chimp.exec = jest.genMockFunction();
 
       chimp.selectMode = jest.genMockFunction();
@@ -100,6 +103,7 @@ describe('Chimp', function () {
       var restore = chimp.fs.existsSync;
       chimp.fs.existsSync = jest.genMockFn().mockReturnValue(true);
 
+      chimp.informUser = jest.genMockFunction();
       chimp.exec = jest.genMockFunction().mockImplementation(function (cmd, callback) {
         return callback(null);
       });
@@ -193,7 +197,7 @@ describe('Chimp', function () {
 
       chimp.watch();
 
-      expect(chokidar.watch.mock.calls[0][0]).toBe(options.path);
+      expect(chokidar.watch.mock.calls[0][0]).toEqual([options.path]);
 
     });
 
@@ -209,12 +213,12 @@ describe('Chimp', function () {
       chokidar.watcher.on = jest.genMockFunction();
 
       chimp.watch();
-      expect(chokidar.watcher.on.mock.calls[0][0]).toBe('ready');
+      expect(chokidar.watcher.once.mock.calls[0][0]).toBe('ready');
 
-      var readyCallback = chokidar.watcher.on.mock.calls[0][1];
+      var readyCallback = chokidar.watcher.once.mock.calls[0][1];
 
       readyCallback();
-      expect(chokidar.watcher.on.mock.calls[1][0]).toBe('all');
+      expect(chokidar.watcher.on.mock.calls[0][0]).toBe('all');
 
     });
 
@@ -226,14 +230,13 @@ describe('Chimp', function () {
       var chimp = new Chimp();
 
       chimp.run = jest.genMockFunction();
-      chokidar.watcher.on = jest.genMockFunction();
 
       chimp.watch();
 
-      var readyCallback = chokidar.watcher.on.mock.calls[0][1];
+      var readyCallback = chokidar.watcher.once.mock.calls[0][1];
       readyCallback();
 
-      var allCallback = chokidar.watcher.on.mock.calls[1][1];
+      var allCallback = chokidar.watcher.on.mock.calls[0][1];
 
       chimp.rerun = jest.genMockFunction();
 
@@ -254,14 +257,13 @@ describe('Chimp', function () {
       var chimp = new Chimp();
 
       chimp.run = jest.genMockFunction();
-      chokidar.watcher.on = jest.genMockFunction();
 
       chimp.watch();
 
-      var readyCallback = chokidar.watcher.on.mock.calls[0][1];
+      var readyCallback = chokidar.watcher.once.mock.calls[0][1];
       readyCallback();
 
-      var allCallback = chokidar.watcher.on.mock.calls[1][1];//s
+      var allCallback = chokidar.watcher.on.mock.calls[0][1];
 
       chimp.rerun = jest.genMockFunction();
 
@@ -282,14 +284,13 @@ describe('Chimp', function () {
       var chimp = new Chimp();
 
       chimp.run = jest.genMockFunction();
-      chokidar.watcher.on = jest.genMockFunction();
 
       chimp.watch();
 
-      var readyCallback = chokidar.watcher.on.mock.calls[0][1];
+      var readyCallback = chokidar.watcher.once.mock.calls[0][1];
       readyCallback();
 
-      var allCallback = chokidar.watcher.on.mock.calls[1][1];
+      var allCallback = chokidar.watcher.on.mock.calls[0][1];
 
       chimp.rerun = jest.genMockFunction();
 
@@ -307,11 +308,10 @@ describe('Chimp', function () {
       var chimp = new Chimp();
 
       chimp.run = jest.genMockFunction();
-      chokidar.watcher.on = jest.genMockFunction();
 
       chimp.watch();
 
-      var readyCallback = chokidar.watcher.on.mock.calls[0][1];
+      var readyCallback = chokidar.watcher.once.mock.calls[0][1];
       readyCallback();
 
       expect(chimp.run.mock.calls.length).toBe(1);
@@ -602,7 +602,7 @@ describe('Chimp', function () {
 
       var orderCounter = 0;
 
-      function Process () {
+      function Process() {
         this.orderRun = -1;
       }
 
@@ -786,7 +786,7 @@ describe('Chimp', function () {
 
       var chimp = new Chimp();
 
-      function Process () {
+      function Process() {
         this.state = 'constructed';
       }
 
@@ -816,7 +816,7 @@ describe('Chimp', function () {
 
       var chimp = new Chimp();
 
-      function Process () {
+      function Process() {
         this.state = 'constructed';
       }
 

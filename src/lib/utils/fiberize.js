@@ -7,16 +7,14 @@ export function fiberize(fn) {
     const self = this;
     Fiber(function () {
       try {
-        if (fn.length == 1) {
+        if (fn.length === 1) {
           fn.call(self, done);
         } else {
           fn.call(self);
           done();
         }
-      } catch (e) {
-        process.nextTick(function () {
-          throw(e);
-        });
+      } catch (error) {
+        done(error);
       }
     }).run();
   };

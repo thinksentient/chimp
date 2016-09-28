@@ -1,6 +1,6 @@
 {
   "name": "chimp",
-  "version": "0.33.1",
+  "version": "0.41.1",
   "description": "Develop acceptance tests & end-to-end tests with realtime feedback.",
   "keywords": [
     "simian",
@@ -31,7 +31,10 @@
     "lintfix": "eslint ./src --fix",
     "start": "node ./scripts/run.js",
     "testonly": "npm run-script prepublish && node ./scripts/run-tests.js",
-    "test": "npm run lint && npm run testonly"
+    "test": "npm run lint && npm run testonly",
+    "publish-patch": "npm version patch; npm publish; git push; git push --tags",
+    "publish-minor": "npm version minor; npm publish; git push; git push --tags",
+    "publish-major": "npm version major; npm publish; git push; git push --tags"
   },
   "main": "dist/lib/chimp.js",
   "bin": {
@@ -63,32 +66,31 @@
     "chai": "~3.0.0",
     "chai-as-promised": "~5.1.0",
     "child-process-debug": "0.0.7",
-    "chimp-widgets": "0.2.0",
-    "chokidar": "~1.0.6",
+    "chokidar": "~1.6.0",
     "colors": "1.1.2",
     "commander": "^2.9.0",
-    "cucumber": "xolvio/cucumber-js#v0.9.4-chimp.3",
+    "cucumber": "xolvio/cucumber-js#v1.3.0-chimp.1",
     "deep-extend": "^0.4.1",
     "exit": "^0.1.2",
-    "fibers": "^1.0.7",
+    "fibers": "^1.0.14",
     "freeport": "~1.0.5",
-    "fs-extra": "~0.24.0",
+    "fs-extra": "~0.30.0",
     "glob": "^6.0.1",
     "hapi": "8.8.0",
     "jasmine": "^2.4.1",
     "loglevel": "~1.4.0",
     "minimist": "~1.2.0",
-    "mocha": "2.3.4",
-    "phantomjs-bin": "~1.0.1",
+    "mocha": "2.5.3",
+    "phantomjs-prebuilt": "~2.1.12",
     "progress": "^1.1.8",
     "request": "2.67.0",
     "requestretry": "1.5.0",
     "saucelabs": "~0.1.1",
-    "selenium-standalone": "^4.9.0",
+    "selenium-standalone": "^5.7.1",
     "underscore": "~1.8.3",
     "xolvio-ddp": "^0.12.0",
     "xolvio-jasmine-expect": "^1.0.0",
-    "xolvio-sync-webdriverio": "^5.0.0-rc.3"
+    "xolvio-sync-webdriverio": "^5.1.0"
   },
   "devDependencies": {
     "babel-cli": "6.x.x",
@@ -96,7 +98,11 @@
     "eslint": "^1.10.3",
     "eslint-config-airbnb": "^2.1.1",
     "eslint-plugin-babel": "^3.0.0",
+    "git-release-notes": "0.0.2",
     "jest-cli": "Sanjo/jest#7c71094",
     "shelljs": "^0.6.0"
-  }
+  },
+  "bundledDependencies": [
+    "cucumber"
+  ]
 }

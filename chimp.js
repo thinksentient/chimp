@@ -1,11 +1,13 @@
 module.exports = {
   // - - - - CHIMP - - - -
   watch: false,
-  watchTags: '@focus',
+  watchTags: '@watch',
   offline: false,
 
   // - - - - CUCUMBER - - - -
   path: './features',
+
+  jsonOutput: 'output.json',
 
   // '- - - - DEBUGGING  - - - -
   log: 'info',

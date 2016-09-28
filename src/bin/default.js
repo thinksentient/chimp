@@ -1,18 +1,22 @@
 import path from 'path';
+import {isCI} from '../lib/ci';
 
 module.exports = {
   // - - - - CHIMP - - - -
   watch: false,
-  // @focus is recommended to use. @dev and @watch are deprecated.
-  watchTags: '@focus,@dev,@watch',
+  watchTags: '@watch,@focus',
+  domainSteps: null,
+  e2eSteps: null,
+  fullDomain: false,
+  domainOnly: false,
+  e2eTags: '@e2e',
   watchWithPolling: false,
-  criticalSteps: null,
-  criticalTag: '@critical',
   server: false,
   serverPort: 8060,
   serverHost: 'localhost',
   sync: true,
   offline: false,
+  showXolvioMessages: true,
 
   // - - - - CUCUMBER - - - -
   path: './features',
@@ -21,7 +25,7 @@ module.exports = {
   singleSnippetPerFile: true,
   recommendedFilenameSeparator: '_',
   chai: false,
-  screenshotsOnError: true,
+  screenshotsOnError: isCI(),
   screenshotsPath: '.screenshots',
   captureAllStepScreenshots: false,
   saveScreenshotsToDisk: true,
@@ -31,6 +35,7 @@ module.exports = {
   saveScreenshotsToReport: false,
   jsonOutput: null,
   compiler: 'js:' + path.resolve(__dirname, '../lib/babel-register.js'),
+  conditionOutput: true,
 
   // - - - - SELENIUM  - - - -
   browser: 'chrome',
@@ -57,6 +62,30 @@ module.exports = {
     waitforInterval: 250,
   },
 
+  // - - - - SELENIUM-STANDALONE
+  seleniumStandaloneOptions: {
+    // check for more recent versions of selenium here:
+    // http://selenium-release.storage.googleapis.com/index.html
+    version: '2.53.1',
+    baseURL: 'https://selenium-release.storage.googleapis.com',
+    drivers: {
+      chrome: {
+        // check for more recent versions of chrome driver here:
+        // http://chromedriver.storage.googleapis.com/index.html
+        version: '2.22',
+        arch: process.arch,
+        baseURL: 'https://chromedriver.storage.googleapis.com'
+      },
+      ie: {
+        // check for more recent versions of internet explorer driver here:
+        // http://selenium-release.storage.googleapis.com/index.html
+        version: '2.50.0',
+        arch: 'ia32',
+        baseURL: 'https://selenium-release.storage.googleapis.com'
+      }
+    }
+  },
+
   // - - - - SESSION-MANAGER  - - - -
   noSessionReuse: false,
 
@@ -68,6 +97,9 @@ module.exports = {
 
   // - - - - MOCHA  - - - -
   mocha: false,
+  // mochaTags and mochaGrep only work when watch is false (disabled)
+  mochaTags: '',
+  mochaGrep: null,
   // 'path: './tests',
   mochaTimeout: 60000,
   mochaReporter: 'spec',

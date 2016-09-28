@@ -1,18 +1,18 @@
 /**
  * Externals
  */
-var async     = require('async'),
-    path      = require('path'),
-    chokidar  = require('chokidar'),
-    _         = require('underscore'),
-    log       = require('./log'),
-    freeport  = require('freeport'),
-    DDPClient = require('xolvio-ddp'),
-    fs        = require('fs'),
-    Hapi      = require('hapi'),
-    AutoupdateWatcher = require('./ddp-watcher'),
-    colors = require('colors'),
-    booleanHelper = require('./boolean-helper');
+var async = require('async'),
+  path = require('path'),
+  chokidar = require('chokidar'),
+  _ = require('underscore'),
+  log = require('./log'),
+  freeport = require('freeport'),
+  DDPClient = require('xolvio-ddp'),
+  fs = require('fs'),
+  Hapi = require('hapi'),
+  AutoupdateWatcher = require('./ddp-watcher'),
+  colors = require('colors'),
+  booleanHelper = require('./boolean-helper');
 
 colors.enabled = true;
 var DEFAULT_COLOR = 'yellow';
@@ -49,7 +49,7 @@ Chimp.install = function (callback) {
  * @param {Object} options
  * @api public
  */
-function Chimp (options) {
+function Chimp(options) {
 
   this.chokidar = chokidar;
   this.options = options || {};
@@ -57,6 +57,7 @@ function Chimp (options) {
   this.isInterrupting = false;
   this.exec = require('child_process').exec;
   this.fs = fs;
+  this.testRunnerRunOrder = [];
 
   // store all cli parameters in env hash
   for (var option in options) {
@@ -78,6 +79,8 @@ function Chimp (options) {
 Chimp.prototype.init = function (callback) {
   var self = this;
 
+  this.informUser();
+
   try {
     this._initSimianResultBranch();
     this._initSimianBuildNumber();
@@ -87,6 +90,24 @@ Chimp.prototype.init = function (callback) {
   }
   self.selectMode(callback);
 };
+
+Chimp.prototype.informUser = function () {
+
+  if (this.options.showXolvioMessages) {
+    log.info('\nMaster Chimp and become a testing Ninja! Check out our course: '.green + 'http://bit.ly/2btQaFu\n'.blue.underline);
+  }
+
+  if (booleanHelper.isTruthy(this.options.criticalSteps)) {
+    this.options.e2eSteps = this.options.criticalSteps;
+    log.warn('[chimp] Please use e2eSteps instead of criticalSteps. criticalSteps is now deprecated.'.red);
+  }
+
+  if (booleanHelper.isTruthy(this.options.criticalTag)) {
+    this.options.e2eTags = this.options.criticalTag;
+    log.warn('[chimp] Please use e2eTags instead of criticalTag. criticalTag is now deprecated.'.red);
+  }
+};
+
 
 Chimp.prototype._initSimianResultBranch = function () {
   // Automatically set the result branch for the common CI tools
@@ -159,17 +180,28 @@ Chimp.prototype.selectMode = function (callback) {
  */
 Chimp.prototype.watch = function () {
 
-  var watcher = chokidar.watch(this.options.path, {
+  var self = this;
+
+  var watchDirectories = [];
+  if (self.options.watchSource) {
+    watchDirectories = (self.options.watchSource.split(','));
+  }
+
+  if (self.options.e2eSteps) {
+    watchDirectories.push(self.options.e2eSteps);
+  }
+
+  if (self.options.domainSteps) {
+    watchDirectories.push(self.options.domainSteps);
+  }
+
+  watchDirectories.push(self.options.path);
+
+  var watcher = chokidar.watch(watchDirectories, {
     ignored: /[\/\\](\.|node_modules)/,
     persistent: true,
     usePolling: this.options.watchWithPolling
   });
-
-  if(process.env['chimp.watchSource']){
-    watcher.add(process.env['chimp.watchSource']);
-  }
-
-  var self = this;
 
   // set cucumber tags to be watch based
   if (booleanHelper.isTruthy(self.options.watchTags)) {
@@ -185,9 +217,13 @@ Chimp.prototype.watch = function () {
   }
 
   // wait for initial file scan to complete
-  watcher.on('ready', function () {
+  watcher.once('ready', function () {
 
-    log.info('[chimp] Watching features with tagged with', self.options.watchTags);
+    var watched = [];
+    if (self.options.watchTags) {
+      watched.push(self.options.watchTags.split(','));
+    }
+    log.info(`[chimp] Watching features with tagged with ${watched.join()}`.white);
 
     // start watching
     watcher.on('all', function (event, path) {
@@ -278,7 +314,7 @@ Chimp.prototype._handshakeOverDDP = function () {
   });
 };
 
-Chimp.prototype._parseResult = function(res) {
+Chimp.prototype._parseResult = function (res) {
   // FIXME this is shitty, there's got to be a nicer way to deal with variable async chains
   var cucumberResults = res[1][1] ? res[1][1] : res[1][0];
   if (!cucumberResults) {
@@ -347,9 +383,26 @@ Chimp.prototype._setupRoutes = function (server) {
  */
 Chimp.prototype.run = function (callback) {
 
-  log.info('\n[chimp] Running...'[DEFAULT_COLOR]);
+  log.info(`\n[chimp] Running...`[DEFAULT_COLOR]);
 
   var self = this;
+
+  function getJsonCucumberResults(result) {
+    const startProcessesIndex = 1;
+    if (!result || !result[startProcessesIndex]) {
+      return [];
+    }
+
+    let jsonResult = '[]';
+    _.any(['domain', 'e2e', 'generic'], (type) => {
+      let _testRunner = _.findWhere(self.testRunnerRunOrder, {name: 'cucumber', type});
+      if (_testRunner) {
+        jsonResult = result[startProcessesIndex][_testRunner.index];
+        return true;
+      }
+    });
+    return JSON.parse(jsonResult);
+  }
 
   async.series(
     [
@@ -367,8 +420,7 @@ Chimp.prototype.run = function (callback) {
       if (self.options.simianAccessToken &&
         self.options.simianResultBranch !== false
       ) {
-        const jsonCucumberResult = result && result[1] && result[1][1] ?
-          JSON.parse(result[1][1]) : [];
+        const jsonCucumberResult = getJsonCucumberResults(result);
         const simianReporter = new exports.SimianReporter(self.options);
         simianReporter.report(jsonCucumberResult, () => {
           callback(error, result);
@@ -393,6 +445,7 @@ Chimp.prototype.interrupt = function (callback) {
 
   var self = this;
 
+
   self.isInterrupting = true;
 
   if (!self.processes || self.processes.length === 0) {
@@ -410,7 +463,7 @@ Chimp.prototype.interrupt = function (callback) {
   }
 
   var processes = _.collect(reverseProcesses, function (process) {
-    return process.interrupt.bind(process)
+    return process.interrupt.bind(process);
   });
 
   async.series(processes, function (error, r) {
@@ -459,8 +512,9 @@ Chimp.prototype._startProcesses = function (callback) {
 
   self.processes = self._createProcesses();
 
+
   var processes = _.collect(self.processes, function (process) {
-    return process.start.bind(process)
+    return process.start.bind(process);
   });
 
   // pushing at least one processes guarantees the series below runs
@@ -487,17 +541,24 @@ Chimp.prototype._startProcesses = function (callback) {
 Chimp.prototype._createProcesses = function () {
 
   var processes = [];
+  const self = this;
 
-  if (this.options.browser === 'phantomjs') {
-    process.env['chimp.host'] = this.options.host = 'localhost';
-    var phantom = new exports.Phantom(this.options);
-    processes.push(phantom);
-  }
+  const addTestRunnerToRunOrder = function (name, type) {
+    self.testRunnerRunOrder.push({name, type, index: processes.length - 1});
+  };
 
-  else if (booleanHelper.isFalsey(this.options.host)) {
-    process.env['chimp.host'] = this.options.host = 'localhost';
-    var selenium = new exports.Selenium(this.options);
-    processes.push(selenium);
+  if (!this.options.domainOnly) {
+    if (this.options.browser === 'phantomjs') {
+      process.env['chimp.host'] = this.options.host = 'localhost';
+      var phantom = new exports.Phantom(this.options);
+      processes.push(phantom);
+    }
+
+    else if (booleanHelper.isFalsey(this.options.host)) {
+      process.env['chimp.host'] = this.options.host = 'localhost';
+      var selenium = new exports.Selenium(this.options);
+      processes.push(selenium);
+    }
   }
 
   if (booleanHelper.isTruthy(this.options.mocha)) {
@@ -507,7 +568,7 @@ Chimp.prototype._createProcesses = function () {
     const jasmine = new exports.Jasmine(this.options);
     processes.push(jasmine);
   } else {
-    if (booleanHelper.isTruthy(this.options.criticalSteps)) {
+    if (booleanHelper.isTruthy(this.options.e2eSteps) || booleanHelper.isTruthy(this.options.domainSteps)) {
       // domain scenarios
       if (booleanHelper.isTruthy(this.options.domainSteps)) {
         const options = JSON.parse(JSON.stringify(this.options));
@@ -518,26 +579,45 @@ Chimp.prototype._createProcesses = function () {
         }
         const message = '\n[chimp] domain scenarios...';
         options.r.push(options.domainSteps);
-        processes.push(new exports.Consoler(message[DEFAULT_COLOR]));
+
+        if (booleanHelper.isTruthy(options.fullDomain)) {
+          delete options.tags;
+        }
+
+        if (!this.options.domainOnly) {
+          processes.push(new exports.Consoler(message[DEFAULT_COLOR]));
+        }
         processes.push(new exports.Cucumber(options));
+        addTestRunnerToRunOrder('cucumber', 'domain');
         processes.push(new exports.Consoler(''));
       }
-      // critical scenarios
-      const options = JSON.parse(JSON.stringify(this.options));
-      if (options.r) {
-        options.r = _.isArray(options.r) ? options.r : [options.r];
-      } else {
-        options.r = [];
+      if (booleanHelper.isTruthy(this.options.e2eSteps)) {
+        // e2e scenarios
+        const options = JSON.parse(JSON.stringify(this.options));
+        if (options.r) {
+          options.r = _.isArray(options.r) ? options.r : [options.r];
+        } else {
+          options.r = [];
+        }
+
+        options.tags = options.tags.split(',');
+        options.tags.push(options.e2eTags);
+        options.tags = options.tags.join();
+
+        const message = `\n[chimp] ${options.e2eTags} scenarios ...`;
+        options.r.push(options.e2eSteps);
+        processes.push(new exports.Consoler(message[DEFAULT_COLOR]));
+        processes.push(new exports.Cucumber(options));
+        addTestRunnerToRunOrder('cucumber', 'e2e');
+        processes.push(new exports.Consoler(''));
       }
-      options.tags = [options.tags, options.criticalTag];
-      const message = '\n[chimp] critical scenarios...';
-      options.r.push(options.criticalSteps);
-      processes.push(new exports.Consoler(message[DEFAULT_COLOR]));
-      processes.push(new exports.Cucumber(options));
-      processes.push(new exports.Consoler(''));
-    } else {
+    }
+
+
+    else {
       const cucumber = new exports.Cucumber(this.options);
       processes.push(cucumber);
+      addTestRunnerToRunOrder('cucumber', 'generic');
     }
 
   }
@@ -551,7 +631,7 @@ Chimp.prototype._createProcesses = function () {
  *
  * @api private
  */
-Chimp.prototype._handleMeteorInterrupt = function() {
+Chimp.prototype._handleMeteorInterrupt = function () {
   if (process.env.MIRROR_PORT) {
     process.on('SIGINT', function () {
       log.debug('[chimp] SIGINT detected, killing process');

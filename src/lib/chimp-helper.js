@@ -1,19 +1,18 @@
-var chai            = require('chai'),
-    chaiAsPromised  = require('chai-as-promised'),
-    log             = require('./log'),
-    DDP             = require('./ddp'),
-    request         = require('request'),
-    Promise         = require('bluebird'),
-    _               = require('underscore'),
-    wrapAsync       = require('xolvio-sync-webdriverio').wrapAsync,
-    wrapAsyncObject = require('xolvio-sync-webdriverio').wrapAsyncObject,
-    SessionFactory  = require('./session-factory'),
-    widgets         = require('chimp-widgets'),
-    path            = require('path'),
-    colors          = require('colors'),
-    fs              = require('fs-extra'),
-    exit            = require('exit'),
-    booleanHelper   = require('./boolean-helper');
+var chai = require('chai'),
+  chaiAsPromised = require('chai-as-promised'),
+  log = require('./log'),
+  DDP = require('./ddp'),
+  request = require('request'),
+  Promise = require('bluebird'),
+  _ = require('underscore'),
+  wrapAsync = require('xolvio-sync-webdriverio').wrapAsync,
+  wrapAsyncObject = require('xolvio-sync-webdriverio').wrapAsyncObject,
+  SessionFactory = require('./session-factory'),
+  path = require('path'),
+  colors = require('colors'),
+  fs = require('fs-extra'),
+  exit = require('exit'),
+  booleanHelper = require('./boolean-helper');
 import merge from 'deep-extend';
 import {
   parseNullableString,
@@ -54,11 +53,6 @@ var chimpHelper = {
     }
   },
 
-  configureWidgets: function () {
-    // CHIMP WIDGETS
-    global.chimpWidgets = widgets;
-  },
-
   createGlobalAliases: function () {
     global.driver = global.browser;
     global.client = global.browser;
@@ -79,7 +73,7 @@ var chimpHelper = {
             browserName: parseNullableString(process.env['chimp.browser']),
             platform: parseNullableString(process.env['chimp.platform']),
             name: parseNullableString(process.env['chimp.name']),
-            version: parseNullableString(process.env['chimp.version']),
+            version: parseNullableString(process.env['chimp.browserVersion']),
             deviceName: parseNullableString(process.env['chimp.deviceName']),
           },
           user: parseNullableString(process.env['chimp.user'] || process.env.SAUCE_USERNAME),
@@ -105,17 +99,29 @@ var chimpHelper = {
       }
 
       log.debug('[chimp][helper] webdriverioOptions are ', JSON.stringify(webdriverioOptions));
+      let remoteSession;
+      if (parseNullableInteger(process.env['CUCUMBER_BROWSERS'])) {
+        var options = _.clone(webdriverioOptions);
+        options.multiBrowser = true;
+        const multiremoteWebdriverIoOptions = {};
+        var _browsersTotal = parseNullableInteger(process.env['CUCUMBER_BROWSERS']);
+        for (var _browserIndex = 0; _browserIndex < _browsersTotal; _browserIndex++) {
+          multiremoteWebdriverIoOptions['browser' + _browserIndex] = _.clone(options);
+        }
+        remoteSession = wrapAsync(global.sessionManager.multiremote, global.sessionManager);
+        global.browser = remoteSession(multiremoteWebdriverIoOptions);
 
-      const remoteSession = wrapAsync(global.sessionManager.remote, global.sessionManager);
-      global.browser = remoteSession(webdriverioOptions);
+      }
+      else {
+        remoteSession = wrapAsync(global.sessionManager.remote, global.sessionManager);
+        global.browser = remoteSession(webdriverioOptions);
+      }
 
       chaiAsPromised.transferPromiseness = global.browser.transferPromiseness;
     };
 
-    var initBrowser = function () {
+    var initSingleBrowser = function (browser) {
       log.debug('[chimp][helper] init browser');
-      var browser = global.browser;
-      browser.initSync();
       log.debug('[chimp][helper] init browser callback');
 
       browser.screenshotsCount = 0;
@@ -131,10 +137,27 @@ var chimpHelper = {
 
       if (process.env['chimp.browser'] === 'phantomjs') {
         browser.setViewportSizeSync({
-          width: process.env['chimp.phantom_w']?parseInt(process.env['chimp.phantom_w']):1280,
-          height: process.env['chimp.phantom_h']?parseInt(process.env['chimp.phantom_h']):1024
+          width: process.env['chimp.phantom_w'] ? parseInt(process.env['chimp.phantom_w']):1280,
+          height: process.env['chimp.phantom_h'] ? parseInt(process.env['chimp.phantom_h']):1024
         });
       }
+    };
+
+    var initBrowser = function () {
+      log.debug('[chimp][hooks] init browser');
+      var browser = global.browser;
+      log.debug('[chimp][hooks] init browser callback');
+
+      if (browser.instances) {
+        browser.instances.forEach(function (singleBrowser) {
+          initSingleBrowser(singleBrowser);
+        });
+      }
+      else {
+        browser.initSync();
+        initSingleBrowser(browser);
+      }
+
     };
 
     var addServerExecute = function () {
@@ -186,17 +209,12 @@ var chimpHelper = {
       }
     };
 
-    var configureChimpWidgetsDriver = function() {
-      widgets.driver.api = global.browser;
-    };
-
     try {
       setupBrowser();
       initBrowser();
       if (booleanHelper.isTruthy(process.env['chimp.ddp'])) {
         setupDdp();
       }
-      configureChimpWidgetsDriver();
     } catch (error) {
       log.error('[chimp][helper] setupBrowserAndDDP had error');
       log.error(error);
@@ -206,7 +224,6 @@ var chimpHelper = {
   },
 
   init: function () {
-    this.configureWidgets();
     this.setupGlobals();
     this.createGlobalAliases();
   }
